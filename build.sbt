@@ -4,7 +4,7 @@ version := "1.0-SNAPSHOT"
 
 lazy val root = (project in file(".")).enablePlugins(PlayScala)
 
-scalaVersion := "2.11.5"
+scalaVersion := "2.11.6"
 
 libraryDependencies ++= Seq(
   jdbc,
@@ -12,6 +12,5 @@ libraryDependencies ++= Seq(
   cache,
   ws,
   filters,
-  "org.jsoup" % "jsoup" % "1.8.1",
-  "org.influxdb" % "influxdb-java" % "1.5"
+  "org.jsoup" % "jsoup" % "1.8.1"
 )

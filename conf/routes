@@ -7,8 +7,9 @@
 GET     /building							controllers.v1.buildings
 GET     /building/:id						controllers.v1.buildingDetails(id: String)
 # NEW API
-GET		/v2/buildings						controllers.v2.buildings
-GET		/v2/building/:id					controllers.v2.buildingDetails(id: String)
+GET		/testing/buildings						controllers.v2.buildings
+GET		/testing/building/:id					controllers.v2.buildingDetails(id: String)
 
 # Map static resources from the /public folder to the /assets URL path
 GET     /assets/*file						controllers.Assets.at(path="/public", file)
+OPTIONS /*all  								controllers.v1.preflight(all: String)

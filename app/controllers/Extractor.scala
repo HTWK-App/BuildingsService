@@ -28,7 +28,7 @@ object Extractor {
    */
   //key -> name, link, text, positon(longitude, latitude), address, imageLink, image, timestamp
   private var buildingsMap = ParMap.empty[String, (String, String, String, String, (Float, Float), String, String, Long)]
-  
+
   def getBuildings = {
     val b = buildingsMap
     b
@@ -43,13 +43,12 @@ object Extractor {
 
         val doc = Jsoup.connect(link).get()
         val heading = doc.select("#content h1").first().text
-        val key = heading.split('(').last.split(')').head
+        val key = keyCornerCase(heading)
         val content = doc.select("#content div.csc-textpic-text p")
         val text = textCornerCase(key, content)
         val adress = adressCornerCase(key, content)
         val pos = extractPosition(doc)
-        val imgLink = "http://www.htwk-leipzig.de/" + (doc select ("#content img") attr ("src"))
-        val img = Base64 encodeBase64String (Jsoup connect (imgLink) ignoreContentType (true) execute () bodyAsBytes ())
+        val (imgLink, img) = imageCornerCase(key, doc)
         val timestamp = extractTimestamp(doc).getTime
 
         (key, (heading, link, text, adress, pos, imgLink, img, timestamp))
@@ -80,6 +79,17 @@ object Extractor {
   }
 
   //Corner Cases *********************************************************
+  private def keyCornerCase(heading: String): String = {
+
+    val key = heading.split('(').last.split(')').head
+    key match {
+      case "Mensa Academica" => "MenAca"
+      case "SH früher HS" => "SH"
+      case _ => key
+    }
+
+  }
+
   private def textCornerCase(key: String, content: Elements): String = {
 
     def extractText(end: Integer): String = {
@@ -92,7 +102,7 @@ object Extractor {
       case "FZC" => extractText(3)
       case "FZE" => extractText(6)
       case "HB" => extractText(4)
-      case "Mensa Academica" => extractText(5)
+      case "MenAca" => extractText(5)
       case _ => extractText(2)
     }
   }
@@ -109,9 +119,24 @@ object Extractor {
       case "FZC" => extractAdress(2, 1, ", ")
       case "HB" => extractAdress(2, 1)
       case "M" => ""
-      case "Mensa Academica" => extractAdress(4, 3)
+      case "MenAca" => extractAdress(4, 3)
       case _ => content.last().text()
     }
+  }
+
+  private def imageCornerCase(key: String, doc: Document): (String, String) = {
+
+    val imgLink = key match {
+      case "FZC" => ""
+      case "N" => ""
+      case _ => "http://www.htwk-leipzig.de/" + (doc select ("#content img") attr ("src"))
+    }
+
+    val img = imgLink match {
+      case "" => ""
+      case _ => Base64 encodeBase64String (Jsoup connect (imgLink) ignoreContentType (true) execute () bodyAsBytes ())
+    }
+    (imgLink, img)
   }
 
   private def extractTimestamp(doc: Document): Date = {
