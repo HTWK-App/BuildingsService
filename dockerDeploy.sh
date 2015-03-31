@@ -4,5 +4,9 @@ activator docker:dockerGenerateContext
 
 cp Dockerfile target/docker/
 cp newrelic-java-3.14.0.zip target/docker/newrelic.zip
+cp NewRelicLicense target/docker/license
 
-docker build target/docker/
+cd target/docker/
+
+sudo docker build -t rmeissn/buildings ./
+
