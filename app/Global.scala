@@ -8,7 +8,7 @@ import play.api.mvc.RequestHeader
 import play.api.mvc.WithFilters
 import play.filters.gzip.GzipFilter
 
-object Global extends WithFilters(new GzipFilter(), new CorsFilter()) with GlobalSettings {
+object Global extends WithFilters(new GzipFilter()/*, new CorsFilter()*/) with GlobalSettings {
 
   override def onStart(app: Application) {
     Logger.info("Application has started")
@@ -17,10 +17,5 @@ object Global extends WithFilters(new GzipFilter(), new CorsFilter()) with Globa
 
   override def onStop(app: Application) {
     Logger.info("Application shutdown...")
-  }
-
-  override def onRouteRequest(request: RequestHeader): Option[Handler] = {
-    //logAccess(request.path)
-    super.onRouteRequest(request)
   }
 }

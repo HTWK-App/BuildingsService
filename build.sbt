@@ -1,5 +1,3 @@
-import NativePackagerKeys._
-
 name := """building-microservice"""
 
 version := "1.0-SNAPSHOT"
@@ -16,8 +14,3 @@ libraryDependencies ++= Seq(
   filters,
   "org.jsoup" % "jsoup" % "1.8.1"
 )
-
-// Docker Config
-maintainer := "roymeissn@gmail.com"
-
-dockerExposedPorts in Docker := Seq(9000)
