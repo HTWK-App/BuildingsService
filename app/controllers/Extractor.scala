@@ -19,7 +19,7 @@ import play.api.libs.concurrent.Akka
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 
 /**
- * TODO Find a safe way to shutdown the actor-system. Currently it ends up with an exception.
+ * @TODO Find a safe way to shutdown the actor-system. Currently it ends up with an exception.
  */
 object Extractor {
 
@@ -29,11 +29,17 @@ object Extractor {
   //key -> name, link, text, positon(longitude, latitude), address, imageLink, image, timestamp
   private var buildingsMap = ParMap.empty[String, (String, String, String, String, (Float, Float), String, String, Long)]
 
+  /**
+   * Returns a Map, containing all known buildings
+   */
   def getBuildings = {
     val b = buildingsMap
     b
   }
 
+  /**
+   * Worker function, to renew cached buildings 
+   */
   def cacheIt: FiniteDuration = {
     Logger.info("Started cache renew")
 
@@ -87,7 +93,6 @@ object Extractor {
       case "SH früher HS" => "SH"
       case _ => key
     }
-
   }
 
   private def textCornerCase(key: String, content: Elements): String = {
