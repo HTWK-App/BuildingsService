@@ -20,11 +20,11 @@ object v1 extends Controller {
    */
   def buildings = Action { implicit request =>
     render {
+      case Accepts.Json() => getBuildingsResult("json")
       case AcceptsRDFXML() => getBuildingsResult("RDF/XML")
       case AcceptsTurtle() => getBuildingsResult("Turtle")
       case AcceptsN3() => getBuildingsResult("N-Triples")
       //case AcceptsJSONLD() => getBuildingsResult("JSON-LD")  --> No Writer found Exception
-      case Accepts.Json() => getBuildingsResult("json")
     }
   }
 
@@ -37,11 +37,11 @@ object v1 extends Controller {
    */
   def buildingDetails(key: String) = Action { implicit request =>
     render {
+      case Accepts.Json() => getBuildingDetailsResult(key, "json")
       case AcceptsRDFXML() => getBuildingDetailsResult(key, "RDF/XML")
       case AcceptsTurtle() => getBuildingDetailsResult(key, "Turtle")
       case AcceptsN3() => getBuildingDetailsResult(key, "N-Triples")
       //case AcceptsJSONLD() => getBuildingDetailsResult(key, "JSON-LD") --> No Writer found Exception
-      case Accepts.Json() => getBuildingDetailsResult(key, "json")
     }
   }
 
