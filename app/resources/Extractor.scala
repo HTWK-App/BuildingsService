@@ -1,4 +1,4 @@
-package controllers
+package resources
 
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -19,26 +19,29 @@ import play.api.libs.concurrent.Akka
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 
 /**
+ * Singleton Object that holds the data about all buildings
+ *
  * @TODO Find a safe way to shutdown the actor-system. Currently it ends up with an exception.
  */
 object Extractor {
 
   /**
+   * key -> name, link, text, positon(longitude, latitude), address, imageLink, image, timestamp
+   *
    * @FIXME Unsafe concurrent acess to buildingsmap through actors and this object
    */
-  //key -> name, link, text, positon(longitude, latitude), address, imageLink, image, timestamp
   private var buildingsMap = ParMap.empty[String, (String, String, String, String, (Float, Float), String, String, Long)]
 
-  /**
-   * Returns a Map, containing all known buildings
-   */
+  /** Returns a map, containing all known buildings */
   def getBuildings = {
     val b = buildingsMap
     b
   }
 
   /**
-   * Worker function, to renew cached buildings 
+   * Worker function, to renew cached buildings
+   *
+   * @return It was forced to return something --> useless data
    */
   def cacheIt: FiniteDuration = {
     Logger.info("Started cache renew")
@@ -73,6 +76,9 @@ object Extractor {
     time
   }
 
+  /**
+   * Returns a sequence containing all known links to building detail Webpages
+   */
   private def extractBuildingLinks: ParSeq[String] = {
     val doc = Jsoup
       .connect("http://www.htwk-leipzig.de/de/hochschule/ueber-die-htwk-leipzig/gebaeudeuebersicht/")
@@ -85,16 +91,25 @@ object Extractor {
   }
 
   //Corner Cases *********************************************************
+  /** Corner cases for broken keys of the resulting map */
   private def keyCornerCase(heading: String): String = {
 
     val key = heading.split('(').last.split(')').head
     key match {
-      case "Mensa Academica" => "MenAca"
+      case "Mensa Academica" => "Mensa"
       case "SH früher HS" => "SH"
       case _ => key
     }
   }
 
+  /**
+   * Corner cases for different text formatting inside the HTML Document
+   *
+   * @param key Key inside the resulting Map
+   * @param content preextracted HTML DOM
+   *
+   * @return Description of the building
+   */
   private def textCornerCase(key: String, content: Elements): String = {
 
     def extractText(end: Integer): String = {
@@ -112,6 +127,14 @@ object Extractor {
     }
   }
 
+  /**
+   * Corner cases for different adress formatting inside the HTML Document
+   *
+   * @param key Key inside the resulting Map
+   * @param content preextracted HTML DOM
+   *
+   * @return Adress of the building
+   */
   private def adressCornerCase(key: String, content: Elements): String = {
 
     def extractAdress(start: Integer, end: Integer, add: String = ""): String = {
@@ -129,6 +152,14 @@ object Extractor {
     }
   }
 
+  /**
+   * Corner cases to rebuild broken image links
+   *
+   * @param key Key inside the resulting Map
+   * @param doc Full HTML DOM
+   *
+   * @return 2_Tuple[Image-Link, Base64 encoded Image]
+   */
   private def imageCornerCase(key: String, doc: Document): (String, String) = {
 
     val imgLink = key match {
@@ -144,6 +175,14 @@ object Extractor {
     (imgLink, img)
   }
 
+  /**
+   * Extracts the Timestamp from the provided page
+   *
+   * @param doc Full HTML DOM
+   *
+   * @return Extracted Timestamp as Date Object
+   *
+   */
   private def extractTimestamp(doc: Document): Date = {
     val extime = doc.select("#content .last_update").first().text()
       .split("E-Mail").head
@@ -152,6 +191,13 @@ object Extractor {
     new SimpleDateFormat("dd.MM.yyy").parse(extime)
   }
 
+  /**
+   * Extracts the Geo position from the provided page
+   *
+   * @param doc Full HTML DOM
+   *
+   * @return 2_Tuple[Latitude, Longitude]
+   */
   private def extractPosition(doc: Document): (Float, Float) = {
     val posLine = doc.toString().lines filter { line =>
       line contains ("var latlng = new google.maps.LatLng(")
@@ -162,5 +208,4 @@ object Extractor {
     }
     (pos.head.toFloat, pos.last.toFloat)
   }
-
 }

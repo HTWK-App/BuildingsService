@@ -1,72 +1,48 @@
 package controllers
 
-import scala.math.BigDecimal.long2bigDecimal
-
-import Extractor.getBuildings
-import play.api.Play.current
-import play.api.cache.Cached
-import play.api.libs.json.JsNumber
-import play.api.libs.json.JsObject
-import play.api.libs.json.JsString
-import play.api.libs.json.Json
-import play.api.libs.json.Json.toJsFieldJsValueWrapper
+import play.api.mvc.Accepting
 import play.api.mvc.Action
 import play.api.mvc.Controller
+import resources.ResultGenerator.getBuildingDetailsResult
+import resources.ResultGenerator.getBuildingsResult
 
 object v1 extends Controller {
 
+  val AcceptsRDFXML = Accepting("application/rdf+xml")
+  val AcceptsTurtle = Accepting("text/turtle")
+  val AcceptsN3 = Accepting("text/n3")
+  val AcceptsJSONLD = Accepting("application/ld+json")
+
   /**
-   * Returns all buildings as an JSON list or an InternalServerError, if an Exception is thrown
+   * Get all buildings as a list
+   *
+   * @return Result as List or InternalServerError, if an Exception was thrown
    */
-  def buildings = Cached.status(_ => "buildings", 200, 20) {
-    Action {
-      val buildings = getBuildings.toSeq.seq sortBy { case (x, _) => x }
-
-      if (buildings.nonEmpty) {
-        val list = buildings
-          .map { case (key, _) => Json.arr(getBuildingsDetailsAsJSON(key).get) }
-          .reduce(_ ++ _)
-
-        Ok(list).withHeaders("Cache-Control" -> "public, max-age=604800")
-      } else {
-        //logError("No Buildings found")
-        InternalServerError
-      }
+  def buildings = Action { implicit request =>
+    render {
+      case AcceptsRDFXML() => getBuildingsResult("RDF/XML")
+      case AcceptsTurtle() => getBuildingsResult("Turtle")
+      case AcceptsN3() => getBuildingsResult("N-Triples")
+      //case AcceptsJSONLD() => getBuildingsResult("JSON-LD")  --> No Writer found Exception
+      case Accepts.Json() => getBuildingsResult("json")
     }
   }
 
   /**
-   * Returns a specific building as an JSON Object or NotFound
+   * Get details for a specific building
+   *
+   * @param key The key inside the BuildingsMap
+   *
+   * @return Result or NotFound
    */
-  def buildingDetails(key: String) = Cached.status(_ => "building/" + key, 200, 20) {
-    Action {
-      val building = getBuildingsDetailsAsJSON(key)
-
-      if (building.isDefined)
-        Ok(building.get).withHeaders("Cache-Control" -> "public, max-age=604800")
-      else
-        NotFound
+  def buildingDetails(key: String) = Action { implicit request =>
+    render {
+      case AcceptsRDFXML() => getBuildingDetailsResult(key, "RDF/XML")
+      case AcceptsTurtle() => getBuildingDetailsResult(key, "Turtle")
+      case AcceptsN3() => getBuildingDetailsResult(key, "N-Triples")
+      //case AcceptsJSONLD() => getBuildingDetailsResult(key, "JSON-LD") --> No Writer found Exception
+      case Accepts.Json() => getBuildingDetailsResult(key, "json")
     }
   }
 
-  /**
-   * Returns a specific building as an Option. 
-   * Some -> a JSON Object to this building. 
-   * None -> building not found or Exception
-   */
-  private def getBuildingsDetailsAsJSON(key: String): Option[JsObject] = {
-    val buildings = getBuildings
-
-    buildings.nonEmpty match {
-      case true =>
-        buildings.get(key).map {
-          case (name, link, text, address, (long, lat), imglink, img, timestamp) => Json.obj(
-            "id" -> JsString(key), "fullName" -> JsString(name), "detailLink" -> JsString(link),
-            "description" -> Json.arr(JsString(text)), "latLng" -> JsString(long.toString() + ", " + lat.toString()),
-            "address" -> JsString(address), "pictureLink" -> JsString(imglink),
-            "pictureData" -> JsString("data:image/jpg;base64," + img), "lastChange" -> JsNumber(timestamp))
-        }
-      case _ => None
-    }
-  }
 }

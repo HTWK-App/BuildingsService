@@ -22,4 +22,5 @@ server.pid
 .project
 NewRelicLicense
 secret
-
+.cache-main
+.cache-tests

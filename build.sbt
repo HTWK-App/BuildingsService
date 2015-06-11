@@ -12,5 +12,6 @@ libraryDependencies ++= Seq(
   cache,
   ws,
   filters,
-  "org.jsoup" % "jsoup" % "1.8.1"
+  "org.jsoup" % "jsoup" % "1.8.1",
+  "org.apache.jena" % "jena-core" % "2.13.0"
 )
