@@ -13,6 +13,9 @@ import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.select.Elements
 
+import com.hp.hpl.jena.rdf.model.ModelFactory
+import com.hp.hpl.jena.vocabulary.RDF
+
 import play.api.Logger
 import play.api.Play.current
 import play.api.libs.concurrent.Akka
@@ -31,10 +34,17 @@ object Extractor {
    * @FIXME Unsafe concurrent acess to buildingsmap through actors and this object
    */
   private var buildingsMap = ParMap.empty[String, (String, String, String, String, (Float, Float), String, String, Long)]
+  private var RDFGraph = ModelFactory.createDefaultModel()
 
   /** Returns a map, containing all known buildings */
   def getBuildings = {
     val b = buildingsMap
+    b
+  }
+  
+  /** Returns a Jena RDF Model, containing all known buildings */
+  def getGraph = {
+    val b = RDFGraph
     b
   }
 
@@ -64,6 +74,7 @@ object Extractor {
       }.toMap
 
       buildingsMap = extractedBuildings
+      renewGraph()
       Logger.info("Cache renewed")
       24.hour
     } catch {
@@ -207,5 +218,38 @@ object Extractor {
       case _ => Array("")
     }
     (pos.head.toFloat, pos.last.toFloat)
+  }
+
+  def renewGraph() = {
+
+    val buildings = getBuildings.seq
+    val model = ModelFactory.createDefaultModel()
+    val baseURI = "http://htwk-app.imn.htwk-leipzig.de/info/building"
+
+    buildings.foreach {
+      case (key, (name, link, text, address, (long, lat), imglink, img, timestamp)) => {
+
+        model.createResource(baseURI + "/" + key)
+          .addProperty(RDF.`type`, Place.Place)
+          .addProperty(Place.geo, model.createResource(baseURI + "/" + key + "/GeoCoordinates")
+            .addProperty(RDF.`type`, GeoCoordinates.GeoCoordinates)
+            .addProperty(GeoCoordinates.latitude, model.createTypedLiteral((lat.floatValue().asInstanceOf[java.lang.Float])))
+            .addProperty(GeoCoordinates.longitude, model.createTypedLiteral((long.floatValue().asInstanceOf[java.lang.Float]))))
+          .addProperty(Place.address, model.createResource(baseURI + "/" + key + "/PostalAddress")
+            .addProperty(RDF.`type`, PostalAddress.PostalAddress)
+            .addProperty(PostalAddress.addressCountry, "DE")
+            .addProperty(PostalAddress.addressLocality, model.createLiteral("Leipzig", "de"))
+            .addProperty(PostalAddress.streetAddress, model.createLiteral(address, "de")))
+          .addProperty(Place.photo, model.createResource(baseURI + "/" + key + "/photo")
+            .addProperty(RDF.`type`, ImageObject.ImageObject)
+            .addProperty(ImageObject.contentUrl, "data:image/jpg;base64," + img)
+            .addProperty(ImageObject.url, imglink))
+          .addProperty(Place.alternateName, key)
+          .addProperty(Place.name, model.createLiteral(name, "de"))
+          .addProperty(Place.description, model.createLiteral(text, "de"))
+      }
+    }
+
+    RDFGraph = model
   }
 }

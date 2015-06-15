@@ -45,4 +45,14 @@ object v1 extends Controller {
     }
   }
 
+  def queryBuildings = Action {
+    try {
+      val res = resources.ResultGenerator.queryGraph("SELECT ?s ?p ?o WHERE { ?s ?p ?o}")
+      Ok(res)
+    } catch {
+      case t: Throwable => InternalServerError(t.toString())
+    }
+
+  }
+
 }

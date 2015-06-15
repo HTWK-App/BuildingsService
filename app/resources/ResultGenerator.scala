@@ -1,9 +1,14 @@
 package resources
 
+import java.io.ByteArrayOutputStream
 import java.io.StringWriter
 
 import scala.math.BigDecimal.long2bigDecimal
 
+import com.hp.hpl.jena.query.QueryExecutionFactory
+import com.hp.hpl.jena.query.QueryFactory
+import com.hp.hpl.jena.query.ResultSetFormatter
+import com.hp.hpl.jena.sparql.resultset._
 import com.hp.hpl.jena.rdf.model.ModelFactory
 import com.hp.hpl.jena.vocabulary.RDF
 
@@ -28,9 +33,11 @@ object ResultGenerator {
    * @return HTTP Result
    */
   def getBuildingsResult(typ: String): Result = {
-    val buildings = getBuildings.toSeq.seq sortBy { case (x, _) => x }
+
     typ match {
       case "json" =>
+        val buildings = getBuildings.toSeq.seq sortBy { case (x, _) => x }
+
         if (buildings.nonEmpty) {
           val list = buildings
             .map { case (key, _) => Json.arr(getBuildingDetailsAsJSON(key).get) }
@@ -40,12 +47,12 @@ object ResultGenerator {
         } else
           InternalServerError
       case _ =>
-        if (buildings.nonEmpty) {
-          val list = buildings
-            .map { case (key, _) => getBuildingDetailsAsLinkedData(key, typ).get }
-            .reduce(_ ++ _)
+        val graph = Extractor.getGraph
 
-          Ok(list).withHeaders("Cache-Control" -> "public, max-age=604800")
+        if (!graph.isEmpty()) {
+          val out = new StringWriter()
+          graph.write(out, typ)
+          Ok(out.toString()).withHeaders("Cache-Control" -> "public, max-age=604800")
         } else
           InternalServerError
     }
@@ -124,27 +131,63 @@ object ResultGenerator {
               .addProperty(RDF.`type`, Place.Place)
               .addProperty(Place.geo, model.createResource(baseURI + "/" + key + "/GeoCoordinates")
                 .addProperty(RDF.`type`, GeoCoordinates.GeoCoordinates)
-                .addProperty(GeoCoordinates.latitude, lat.toString())
-                .addProperty(GeoCoordinates.longitude, long.toString()))
+                .addProperty(GeoCoordinates.latitude, model.createTypedLiteral((lat.floatValue().asInstanceOf[java.lang.Float])))
+                .addProperty(GeoCoordinates.longitude, model.createTypedLiteral((long.floatValue().asInstanceOf[java.lang.Float]))))
               .addProperty(Place.address, model.createResource(baseURI + "/" + key + "/PostalAddress")
                 .addProperty(RDF.`type`, PostalAddress.PostalAddress)
                 .addProperty(PostalAddress.addressCountry, "DE")
-                .addProperty(PostalAddress.addressLocality, "Leipzig")
-                .addProperty(PostalAddress.streetAddress, address))
+                .addProperty(PostalAddress.addressLocality, model.createLiteral("Leipzig", "de"))
+                .addProperty(PostalAddress.streetAddress, model.createLiteral(address, "de")))
               .addProperty(Place.photo, model.createResource(baseURI + "/" + key + "/photo")
                 .addProperty(RDF.`type`, ImageObject.ImageObject)
                 .addProperty(ImageObject.contentUrl, "data:image/jpg;base64," + img)
                 .addProperty(ImageObject.url, imglink))
               .addProperty(Place.alternateName, key)
-              .addProperty(Place.name, name)
-              .addProperty(Place.description, text)
+              .addProperty(Place.name, model.createLiteral(name, "de"))
+              .addProperty(Place.description, model.createLiteral(text, "de"))
 
             model.write(out, Datatype)
+            out.close()
             out.toString()
           }
         }
       case _ => None
     }
+
+    /* Alternate Method, Not working yet, because sub-resources are missing
+    val graph = Extractor.getGraph
+
+    val res = graph.query(new SimpleSelector(graph.getResource("http://htwk-app.imn.htwk-leipzig.de/info/building/" + key), null, null.asInstanceOf[RDFNode]))
+
+    val out = new StringWriter()
+    if (!res.isEmpty()) {
+      res.write(out, Datatype)
+      Option.apply(out.toString())
+    } else {
+      Option.apply(null)
+    } */
+  }
+
+  /*
+   * Query the given RDF Graph
+   *
+   * @param queryString query formatted as String
+   *
+   * @return Result String
+   */
+  def queryGraph(queryString: String): String = {
+
+    val query = QueryFactory.create(queryString)
+    val qe = QueryExecutionFactory.create(query, Extractor.getGraph)
+    val results = qe.execSelect()
+    val out = new ByteArrayOutputStream()
+
+    RDFOutput.outputAsRDF(out, "N-Triples", results)
+
+    qe.close()
+    out.close()
+
+    out.toString()
   }
 
 }
