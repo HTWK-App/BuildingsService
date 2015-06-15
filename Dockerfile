@@ -9,7 +9,6 @@ WORKDIR /opt/docker
 
 # Install NewRelic Agent
 RUN unzip newrelic.zip
-ADD license /opt/docker/newrelic/
 RUN cd newrelic && sed -i -e "s/My Application/Buildings MicroService/g" newrelic.yml
 
 # Production settings
