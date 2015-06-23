@@ -1,11 +1,10 @@
 #!/bin/bash
-activator clean
-activator docker:dockerGenerateContext
+activator clean docker:stage
 
 cp Dockerfile target/docker/
 cp newrelic-java-3.17.0.zip target/docker/newrelic.zip
 
 cd target/docker/
 
-sudo docker build -t rmeissn/buildings ./
+docker build -t rmeissn/buildings ./
 

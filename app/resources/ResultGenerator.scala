@@ -1,14 +1,9 @@
 package resources
 
-import java.io.ByteArrayOutputStream
 import java.io.StringWriter
 
 import scala.math.BigDecimal.long2bigDecimal
 
-import com.hp.hpl.jena.query.QueryExecutionFactory
-import com.hp.hpl.jena.query.QueryFactory
-import com.hp.hpl.jena.query.ResultSetFormatter
-import com.hp.hpl.jena.sparql.resultset._
 import com.hp.hpl.jena.rdf.model.ModelFactory
 import com.hp.hpl.jena.vocabulary.RDF
 
@@ -52,6 +47,7 @@ object ResultGenerator {
         if (!graph.isEmpty()) {
           val out = new StringWriter()
           graph.write(out, typ)
+          out.close()
           Ok(out.toString()).withHeaders("Cache-Control" -> "public, max-age=604800")
         } else
           InternalServerError
@@ -126,6 +122,7 @@ object ResultGenerator {
             val baseURI = "http://htwk-app.imn.htwk-leipzig.de/info/building"
             val model = ModelFactory.createDefaultModel()
             val out = new StringWriter()
+            model.setNsPrefixes((new schema()).Prefix)
 
             model.createResource(baseURI + "/" + key)
               .addProperty(RDF.`type`, Place.Place)
@@ -175,19 +172,25 @@ object ResultGenerator {
    *
    * @return Result String
    */
-  def queryGraph(queryString: String): String = {
+  /*def queryGraph(queryString: String): String = {
 
     val query = QueryFactory.create(queryString)
     val qe = QueryExecutionFactory.create(query, Extractor.getGraph)
     val results = qe.execSelect()
     val out = new ByteArrayOutputStream()
+    
+//    while(results.hasNext()){
+//      val sol = results.nextSolution()
+//      println(sol.get("o").toString())
+//    }
 
-    RDFOutput.outputAsRDF(out, "N-Triples", results)
+    //ResultSetFormatter.out(out, results, query)
+    RDFOutput.outputAsRDF(out, "Turtle", results)
 
     qe.close()
     out.close()
 
     out.toString()
-  }
+  }*/
 
 }

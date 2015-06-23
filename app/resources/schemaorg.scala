@@ -2,12 +2,16 @@ package resources
 
 import com.hp.hpl.jena.rdf.model.ModelFactory
 
-object Place {
-  private val m_model = ModelFactory.createDefaultModel();
+class schema {
+  
+  protected val NS = "https://schema.org/"
+  protected val m_model = ModelFactory.createDefaultModel();
+  val Prefix = m_model.setNsPrefix("schema", NS)
+}
 
-  private val NS = "https://schema.org/Place#"
+object Place extends schema {
 
-  val Place = m_model.createResource("https://schema.org/Place")
+  val Place = m_model.createResource(NS + "Place")
 
   val address = m_model.createProperty(NS + "address")
   val geo = m_model.createProperty(NS + "geo")
@@ -18,23 +22,17 @@ object Place {
   val name = m_model.createProperty(NS + "name")
 }
 
-object GeoCoordinates {
-  private val m_model = ModelFactory.createDefaultModel()
+object GeoCoordinates extends schema{
 
-  private val NS = "https://schema.org/GeoCoordinates#"
-
-  val GeoCoordinates = m_model.createResource("https://schema.org/GeoCoordinates")
+  val GeoCoordinates = m_model.createResource( NS + "GeoCoordinates")
 
   val latitude = m_model.createProperty(NS + "latitude")
   val longitude = m_model.createProperty(NS + "longitude")
 }
 
-object PostalAddress {
-  private val m_model = ModelFactory.createDefaultModel()
+object PostalAddress extends schema {
 
-  private val NS = "https://schema.org/PostalAddress#"
-
-  val PostalAddress = m_model.createResource("https://schema.org/PostalAddress")
+  val PostalAddress = m_model.createResource(NS + "PostalAddress")
 
   val addressCountry = m_model.createProperty(NS + "addressCountry")
   val addressLocality = m_model.createProperty(NS + "addressLocality")
@@ -43,12 +41,9 @@ object PostalAddress {
   val streetAddress = m_model.createProperty(NS + "streetAddress")
 }
 
-object ImageObject {
-  private val m_model = ModelFactory.createDefaultModel()
+object ImageObject extends schema {
 
-  private val NS = "https://schema.org/ImageObject#"
-
-  val ImageObject = m_model.createResource("https://schema.org/ImageObject")
+  val ImageObject = m_model.createResource(NS + "ImageObject")
 
   val contentUrl = m_model.createProperty(NS + "contentUrl")
   val url = m_model.createProperty(NS + "url")

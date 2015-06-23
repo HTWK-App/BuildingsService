@@ -1,3 +1,3 @@
 #!/bin/bash
 
-sudo docker stop buildings1
+docker stop buildings1

@@ -13,6 +13,7 @@ import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.select.Elements
 
+import com.hp.hpl.jena.rdf.model.Model
 import com.hp.hpl.jena.rdf.model.ModelFactory
 import com.hp.hpl.jena.vocabulary.RDF
 
@@ -37,13 +38,13 @@ object Extractor {
   private var RDFGraph = ModelFactory.createDefaultModel()
 
   /** Returns a map, containing all known buildings */
-  def getBuildings = {
+  def getBuildings: ParMap[String,(String, String, String, String, (Float, Float), String, String, Long)] = {
     val b = buildingsMap
     b
   }
   
   /** Returns a Jena RDF Model, containing all known buildings */
-  def getGraph = {
+  def getGraph: Model = {
     val b = RDFGraph
     b
   }
@@ -74,7 +75,7 @@ object Extractor {
       }.toMap
 
       buildingsMap = extractedBuildings
-      renewGraph()
+      RDFGraph = renewGraph
       Logger.info("Cache renewed")
       24.hour
     } catch {
@@ -220,11 +221,12 @@ object Extractor {
     (pos.head.toFloat, pos.last.toFloat)
   }
 
-  def renewGraph() = {
+  def renewGraph: Model = {
 
     val buildings = getBuildings.seq
     val model = ModelFactory.createDefaultModel()
     val baseURI = "http://htwk-app.imn.htwk-leipzig.de/info/building"
+    model.setNsPrefixes((new schema()).Prefix)
 
     buildings.foreach {
       case (key, (name, link, text, address, (long, lat), imglink, img, timestamp)) => {
@@ -249,7 +251,7 @@ object Extractor {
           .addProperty(Place.description, model.createLiteral(text, "de"))
       }
     }
-
-    RDFGraph = model
+    
+    model
   }
 }
