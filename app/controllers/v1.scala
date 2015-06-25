@@ -1,5 +1,6 @@
 package controllers
 
+import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import play.api.mvc.Accepting
 import play.api.mvc.Action
 import play.api.mvc.Controller
@@ -18,13 +19,15 @@ object v1 extends Controller {
    *
    * @return Result as List or InternalServerError, if an Exception was thrown
    */
-  def buildings = Action { implicit request =>
-    render {
-      case Accepts.Json() => getBuildingsResult("json")
-      case AcceptsRDFXML() => getBuildingsResult("RDF/XML")
-      case AcceptsTurtle() => getBuildingsResult("Turtle")
-      case AcceptsN3() => getBuildingsResult("N-Triples")
-      //case AcceptsJSONLD() => getBuildingsResult("JSON-LD")  --> No Writer found Exception
+  def buildings = Action.async { implicit request =>
+    scala.concurrent.Future {
+      render {
+        case Accepts.Json() => getBuildingsResult("json")
+        case AcceptsRDFXML() => getBuildingsResult("RDF/XML")
+        case AcceptsTurtle() => getBuildingsResult("Turtle")
+        case AcceptsN3() => getBuildingsResult("N-Triples")
+        //case AcceptsJSONLD() => getBuildingsResult("JSON-LD")  --> No Writer found Exception
+      }
     }
   }
 
@@ -35,13 +38,15 @@ object v1 extends Controller {
    *
    * @return Result or NotFound
    */
-  def buildingDetails(key: String) = Action { implicit request =>
-    render {
-      case Accepts.Json() => getBuildingDetailsResult(key, "json")
-      case AcceptsRDFXML() => getBuildingDetailsResult(key, "RDF/XML")
-      case AcceptsTurtle() => getBuildingDetailsResult(key, "Turtle")
-      case AcceptsN3() => getBuildingDetailsResult(key, "N-Triples")
-      //case AcceptsJSONLD() => getBuildingDetailsResult(key, "JSON-LD") --> No Writer found Exception
+  def buildingDetails(key: String) = Action.async { implicit request =>
+    scala.concurrent.Future {
+      render {
+        case Accepts.Json() => getBuildingDetailsResult(key, "json")
+        case AcceptsRDFXML() => getBuildingDetailsResult(key, "RDF/XML")
+        case AcceptsTurtle() => getBuildingDetailsResult(key, "Turtle")
+        case AcceptsN3() => getBuildingDetailsResult(key, "N-Triples")
+        //case AcceptsJSONLD() => getBuildingDetailsResult(key, "JSON-LD") --> No Writer found Exception
+      }
     }
   }
 
