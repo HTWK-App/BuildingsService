@@ -1,5 +1,6 @@
 HTWK Buildings Microservice
 =================================
+[![Build Status](https://snap-ci.com/HTWK-App/BuildingsService/branch/master/build_image)](https://snap-ci.com/HTWK-App/BuildingsService/branch/master)
 
 This microservice collects all known data about buildings of the University of Applied Science Leipzig and provisions it through a REST-JSON API.
 
