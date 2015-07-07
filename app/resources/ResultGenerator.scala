@@ -87,18 +87,14 @@ object ResultGenerator {
    * @return Some -> a JSON Object, containing all informations about the specified building, None -> building not found or an Exception
    */
   private def getBuildingDetailsAsJSON(key: String): Option[JsObject] = {
-    val buildings = getBuildings
 
-    buildings.nonEmpty match {
-      case true =>
-        buildings.get(key).map {
-          case (name, link, text, address, (long, lat), imglink, img, timestamp) => Json.obj(
-            "id" -> JsString(key), "fullName" -> JsString(name), "detailLink" -> JsString(link),
-            "description" -> Json.arr(JsString(text)), "latLng" -> JsString(long.toString() + ", " + lat.toString()),
-            "address" -> JsString(address), "pictureLink" -> JsString(imglink),
-            "pictureData" -> JsString("data:image/jpg;base64," + img), "lastChange" -> JsNumber(timestamp))
-        }
-      case _ => None
+    getBuildings.get(key) match {
+      case Some((name, link, text, address, (long, lat), imglink, img, timestamp)) => Some(Json.obj(
+        "id" -> JsString(key), "fullName" -> JsString(name), "detailLink" -> JsString(link),
+        "description" -> Json.arr(JsString(text)), "latLng" -> JsString(long.toString() + ", " + lat.toString()),
+        "address" -> JsString(address), "pictureLink" -> JsString(imglink),
+        "pictureData" -> JsString("data:image/jpg;base64," + img), "lastChange" -> JsNumber(timestamp)))
+      case None => None
     }
   }
 
@@ -112,42 +108,37 @@ object ResultGenerator {
    */
   def getBuildingDetailsAsLinkedData(key: String, Datatype: String): Option[String] = {
 
-    val buildings = getBuildings
+    getBuildings.get(key) match {
+      case Some((name, link, text, address, (long, lat), imglink, img, timestamp)) => {
 
-    buildings.nonEmpty match {
-      case true =>
-        buildings.get(key).map {
-          case (name, link, text, address, (long, lat), imglink, img, timestamp) => {
+        val baseURI = "http://htwk-app.imn.htwk-leipzig.de/info/building"
+        val model = ModelFactory.createDefaultModel()
+        val out = new StringWriter()
+        model.setNsPrefixes((new schema()).Prefix)
 
-            val baseURI = "http://htwk-app.imn.htwk-leipzig.de/info/building"
-            val model = ModelFactory.createDefaultModel()
-            val out = new StringWriter()
-            model.setNsPrefixes((new schema()).Prefix)
+        model.createResource(baseURI + "/" + key)
+          .addProperty(RDF.`type`, Place.Place)
+          .addProperty(Place.geo, model.createResource(baseURI + "/" + key + "/GeoCoordinates")
+            .addProperty(RDF.`type`, GeoCoordinates.GeoCoordinates)
+            .addProperty(GeoCoordinates.latitude, model.createTypedLiteral((lat.floatValue().asInstanceOf[java.lang.Float])))
+            .addProperty(GeoCoordinates.longitude, model.createTypedLiteral((long.floatValue().asInstanceOf[java.lang.Float]))))
+          .addProperty(Place.address, model.createResource(baseURI + "/" + key + "/PostalAddress")
+            .addProperty(RDF.`type`, PostalAddress.PostalAddress)
+            .addProperty(PostalAddress.addressCountry, "DE")
+            .addProperty(PostalAddress.addressLocality, model.createLiteral("Leipzig", "de"))
+            .addProperty(PostalAddress.streetAddress, model.createLiteral(address, "de")))
+          .addProperty(Place.photo, model.createResource(baseURI + "/" + key + "/photo")
+            .addProperty(RDF.`type`, ImageObject.ImageObject)
+            .addProperty(ImageObject.contentUrl, "data:image/jpg;base64," + img)
+            .addProperty(ImageObject.url, imglink))
+          .addProperty(Place.alternateName, key)
+          .addProperty(Place.name, model.createLiteral(name, "de"))
+          .addProperty(Place.description, model.createLiteral(text, "de"))
 
-            model.createResource(baseURI + "/" + key)
-              .addProperty(RDF.`type`, Place.Place)
-              .addProperty(Place.geo, model.createResource(baseURI + "/" + key + "/GeoCoordinates")
-                .addProperty(RDF.`type`, GeoCoordinates.GeoCoordinates)
-                .addProperty(GeoCoordinates.latitude, model.createTypedLiteral((lat.floatValue().asInstanceOf[java.lang.Float])))
-                .addProperty(GeoCoordinates.longitude, model.createTypedLiteral((long.floatValue().asInstanceOf[java.lang.Float]))))
-              .addProperty(Place.address, model.createResource(baseURI + "/" + key + "/PostalAddress")
-                .addProperty(RDF.`type`, PostalAddress.PostalAddress)
-                .addProperty(PostalAddress.addressCountry, "DE")
-                .addProperty(PostalAddress.addressLocality, model.createLiteral("Leipzig", "de"))
-                .addProperty(PostalAddress.streetAddress, model.createLiteral(address, "de")))
-              .addProperty(Place.photo, model.createResource(baseURI + "/" + key + "/photo")
-                .addProperty(RDF.`type`, ImageObject.ImageObject)
-                .addProperty(ImageObject.contentUrl, "data:image/jpg;base64," + img)
-                .addProperty(ImageObject.url, imglink))
-              .addProperty(Place.alternateName, key)
-              .addProperty(Place.name, model.createLiteral(name, "de"))
-              .addProperty(Place.description, model.createLiteral(text, "de"))
-
-            model.write(out, Datatype)
-            out.close()
-            out.toString()
-          }
-        }
+        model.write(out, Datatype)
+        out.close()
+        Some(out.toString())
+      }
       case _ => None
     }
 
@@ -164,33 +155,4 @@ object ResultGenerator {
       Option.apply(null)
     } */
   }
-
-  /*
-   * Query the given RDF Graph
-   *
-   * @param queryString query formatted as String
-   *
-   * @return Result String
-   */
-  /*def queryGraph(queryString: String): String = {
-
-    val query = QueryFactory.create(queryString)
-    val qe = QueryExecutionFactory.create(query, Extractor.getGraph)
-    val results = qe.execSelect()
-    val out = new ByteArrayOutputStream()
-    
-//    while(results.hasNext()){
-//      val sol = results.nextSolution()
-//      println(sol.get("o").toString())
-//    }
-
-    //ResultSetFormatter.out(out, results, query)
-    RDFOutput.outputAsRDF(out, "Turtle", results)
-
-    qe.close()
-    out.close()
-
-    out.toString()
-  }*/
-
 }
