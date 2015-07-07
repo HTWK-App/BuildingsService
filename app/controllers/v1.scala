@@ -12,7 +12,6 @@ object v1 extends Controller {
   val AcceptsRDFXML = Accepting("application/rdf+xml")
   val AcceptsTurtle = Accepting("text/turtle")
   val AcceptsN3 = Accepting("text/n3")
-  val AcceptsJSONLD = Accepting("application/ld+json")
 
   /**
    * Get all buildings as a list
@@ -23,10 +22,9 @@ object v1 extends Controller {
     scala.concurrent.Future {
       render {
         case Accepts.Json() => getBuildingsResult("json")
-        case AcceptsRDFXML() => getBuildingsResult("RDF/XML")
-        case AcceptsTurtle() => getBuildingsResult("Turtle")
-        case AcceptsN3() => getBuildingsResult("N-Triples")
-        //case AcceptsJSONLD() => getBuildingsResult("JSON-LD")  --> No Writer found Exception
+        case AcceptsRDFXML() => getBuildingsResult("RDF/XML").withHeaders("Content-Type" -> "application/rdf+xml; charset=utf-8")
+        case AcceptsTurtle() => getBuildingsResult("Turtle").withHeaders("Content-Type" -> "text/turtle; charset=utf-8")
+        case AcceptsN3() => getBuildingsResult("N-Triples").withHeaders("Content-Type" -> "text/n3; charset=utf-8")
       }
     }
   }
@@ -42,22 +40,10 @@ object v1 extends Controller {
     scala.concurrent.Future {
       render {
         case Accepts.Json() => getBuildingDetailsResult(key, "json")
-        case AcceptsRDFXML() => getBuildingDetailsResult(key, "RDF/XML")
-        case AcceptsTurtle() => getBuildingDetailsResult(key, "Turtle")
-        case AcceptsN3() => getBuildingDetailsResult(key, "N-Triples")
-        //case AcceptsJSONLD() => getBuildingDetailsResult(key, "JSON-LD") --> No Writer found Exception
+        case AcceptsRDFXML() => getBuildingDetailsResult(key, "RDF/XML").withHeaders("Content-Type" -> "application/rdf+xml; charset=utf-8")
+        case AcceptsTurtle() => getBuildingDetailsResult(key, "Turtle").withHeaders("Content-Type" -> "text/turtle; charset=utf-8")
+        case AcceptsN3() => getBuildingDetailsResult(key, "N-Triples").withHeaders("Content-Type" -> "text/n3; charset=utf-8")
       }
     }
   }
-
-  /*def queryBuildings = Action {
-    try {
-      val res = resources.ResultGenerator.queryGraph("SELECT ?s ?p ?o WHERE { ?s ?p ?o}")
-      Ok(res)
-    } catch {
-      case t: Throwable => InternalServerError(t.toString())
-    }
-
-  }*/
-
 }
