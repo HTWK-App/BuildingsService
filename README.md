@@ -2,13 +2,23 @@ HTWK Buildings Microservice
 =================================
 [![Build Status](https://snap-ci.com/HTWK-App/BuildingsService/branch/master/build_image)](https://snap-ci.com/HTWK-App/BuildingsService/branch/master)
 
-This microservice collects all known data about buildings of the University of Applied Science Leipzig and provisions it through a REST-JSON API.
+This microservice collects all known data about buildings of the [University of Applied Science Leipzig](https://www.htwk-leipzig.de/en) and provisions it through a REST-JSON and Linked-Data API.
 
-The data is fetched, cleaned and enhanced every 24 houres to ensure latest data.
+The data is fetched, cleaned and enhanced every 24 houres to ensure latest updates.
 
 ### Using this Service ###
 
-Once your Server is running all you need to do is open your browser pointing to the host/port you just published and look at the raw JSON-data.
+Once your Server is running all you need to do is open your browser pointing to the host/port you just published and look at the raw JSON-data. The default Port is 9000, so you got to call:
+
+``` http://localhos:9000/buildings ```
+
+in a Webbrowser.
+
+As Linked-Data, RDF/XML, Turtle and Notation-3 are provided. You can access them from the commandline by calling the following with the right Accept header:
+
+```
+curl -H "Accept: application/rdf+xml" http://localhost:9000/buildings
+```
 
 ### Compilation/Running the Server  ###
 
@@ -16,12 +26,20 @@ Install the [Typesafe Acticator](//www.playframework.com/documentation/2.3.x/Ins
 
 For **developement mode**, execute the following commands:
 
-- activator update
-- activator run
+``` 
+# May take some time...
+activator update
+activator run 
+```
 
-If you wanna start this application in **production mode**, please note that this application was designed to be deployed with docker and instrumented (Metrics, ...) by NewRelic. Inside the project root, you'll find several scripts.
+To package the application for **production mode**, execute the following command. You will be told where the resulting dist zip is placed. Inside this zip, theres a run script. Start it and your ready to go.
 
-- dockerDeploy: cleans the project, prepare docker environment, copy {Dockerfile, NewRelic-Agent, NewRelicLicense}, build docker image
-- dockerRun: Executes the image, build by dockerDeploy
+```
+activator dist
+```
 
-The File "NewRelicLicense" is **missing** inside this repository. It's a file, containing your NewRelic APM License Code. This Code is needed for NewRelic Instrumentation.
+Please note that this application was designed to be deployed with docker and instrumented (Metrics, ...) by NewRelic. Inside the projects root, you'll find a scipt named **dockerDeploy.sh**. This script will build a docker image, containing the app, and try to start it with the tool docker-compose. The needed compose file is not (!!!) included in this repository, so this call will fail. Execute the following to start the docker image:
+
+```
+docker run -it --rm -p 9000:9000 rmeissn/buildings:latest
+```
