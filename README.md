@@ -1,6 +1,7 @@
 HTWK Buildings Microservice
 =================================
 [![Build Status](https://snap-ci.com/HTWK-App/BuildingsService/branch/master/build_image)](https://snap-ci.com/HTWK-App/BuildingsService/branch/master)
+[![License](https://img.shields.io/badge/license-GPLv3-blue.svg)](https://github.com/HTWK-App/BuildingsService/blob/master/LICENSE)
 
 This microservice collects all known data about buildings of the [University of Applied Science Leipzig](https://www.htwk-leipzig.de/en) and provisions it through a REST-JSON and Linked-Data API.
 
