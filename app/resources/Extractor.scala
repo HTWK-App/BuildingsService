@@ -134,7 +134,7 @@ object Extractor {
       case "FZC" => extractText(3)
       case "FZE" => extractText(6)
       case "HB" => extractText(4)
-      case "MenAca" => extractText(5)
+      case "Mensa" => extractText(5)
       case _ => extractText(2)
     }
   }
@@ -159,7 +159,7 @@ object Extractor {
       case "FZC" => extractAdress(2, 1, ", ")
       case "HB" => extractAdress(2, 1)
       case "M" => ""
-      case "MenAca" => extractAdress(4, 3)
+      case "Mensa" => extractAdress(4, 3)
       case _ => content.last().text()
     }
   }
