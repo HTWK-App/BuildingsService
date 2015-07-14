@@ -228,7 +228,7 @@ object ResultGenerator {
         case Some(namesAndDistances) => {
           val ResultAsJson = namesAndDistances.map {
             case (key, name, distance) =>
-              Json.arr(Json.obj("id" -> JsString(key), "fullname" -> JsString(name), "distance" -> JsNumber(distance)))
+              Json.arr(Json.obj("id" -> JsString(key), "fullName" -> JsString(name), "distance" -> JsNumber(distance)))
           }.reduce((a, b) => a ++ b)
 
           Ok(ResultAsJson)
