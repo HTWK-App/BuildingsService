@@ -2,16 +2,25 @@ package resources
 
 import java.io.StringWriter
 
+import scala.collection.Seq
+import scala.concurrent.Await
+import scala.concurrent.Future
+import scala.concurrent.duration.DurationInt
+import scala.math.BigDecimal.int2bigDecimal
 import scala.math.BigDecimal.long2bigDecimal
 
 import com.hp.hpl.jena.rdf.model.ModelFactory
 import com.hp.hpl.jena.vocabulary.RDF
 
+import play.api.Play.current
+import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import play.api.libs.json.JsNumber
 import play.api.libs.json.JsObject
 import play.api.libs.json.JsString
 import play.api.libs.json.Json
 import play.api.libs.json.Json.toJsFieldJsValueWrapper
+import play.api.libs.ws.WS
+import play.api.libs.ws.WSRequestHolder
 import play.api.mvc.Result
 import play.api.mvc.Results.InternalServerError
 import play.api.mvc.Results.NotFound
@@ -19,6 +28,20 @@ import play.api.mvc.Results.Ok
 import resources.Extractor.getBuildings
 
 object ResultGenerator {
+
+  /**
+   * Mapping HTTP contentTypes to Apache Jena types
+   *
+   * @param ContentType HTTP contentType
+   *
+   * @return Jena type
+   */
+  def ContentTypeMapperForJena(ContentType: String): String = ContentType match {
+    case controllers.v1.JSON => ""
+    case controllers.v1.RDF => "RDF/XML"
+    case controllers.v1.Turtle => "Turtle"
+    case controllers.v1.N3 => "N-Triples"
+  }
 
   /**
    * Get details for all buildings as a HTTP Result
@@ -30,7 +53,7 @@ object ResultGenerator {
   def getBuildingsResult(typ: String): Result = {
 
     typ match {
-      case "json" =>
+      case controllers.v1.JSON =>
         val buildings = getBuildings.toSeq.seq sortBy { case (x, _) => x }
 
         if (buildings.nonEmpty) {
@@ -46,7 +69,7 @@ object ResultGenerator {
 
         if (!graph.isEmpty()) {
           val out = new StringWriter()
-          graph.write(out, typ)
+          graph.write(out, ContentTypeMapperForJena(typ))
           out.close()
           Ok(out.toString()).withHeaders("Cache-Control" -> "public, max-age=604800")
         } else
@@ -64,14 +87,14 @@ object ResultGenerator {
    */
   def getBuildingDetailsResult(key: String, typ: String): Result = {
     typ match {
-      case "json" =>
+      case controllers.v1.JSON =>
         val result = getBuildingDetailsAsJSON(key)
         if (result.isDefined)
           Ok(result.get).withHeaders("Cache-Control" -> "public, max-age=604800")
         else
           NotFound
       case _ =>
-        val result = getBuildingDetailsAsLinkedData(key, typ)
+        val result = getBuildingDetailsAsLinkedData(key, ContentTypeMapperForJena(typ))
         if (result.isDefined)
           Ok(result.get).withHeaders("Cache-Control" -> "public, max-age=604800")
         else
@@ -141,18 +164,79 @@ object ResultGenerator {
       }
       case _ => None
     }
+  }
+  
+  /**
+   * Get all building distances as the preferred ContentType
+   *
+   * @param position 
+   * @param ContentType HTTP content-type
+   *
+   * @return A Result, containing all informations about distances and buildings
+   */
+  def calcDistancesAs(position: String, ContentType: String): Result = {
 
-    /* Alternate Method, Not working yet, because sub-resources are missing
-    val graph = Extractor.getGraph
+    def getDestinationsAndNames: (String, Seq[(String, String)]) = {
 
-    val res = graph.query(new SimpleSelector(graph.getResource("http://htwk-app.imn.htwk-leipzig.de/info/building/" + key), null, null.asInstanceOf[RDFNode]))
+      val buildings: Seq[(String, String, Float, Float)] = getBuildings.toSeq
+        .map { case (id, (name, _, _, _, (lat, long), _, _, _)) => (id, name, lat, long) }.seq
+      val destinations: String = buildings.map {
+        case (_, _, lat, long) => lat.toString() + "," + long.toString() + "|"
+      }.reduce((left, right) => left + right).init
 
-    val out = new StringWriter()
-    if (!res.isEmpty()) {
-      res.write(out, Datatype)
-      Option.apply(out.toString())
-    } else {
-      Option.apply(null)
-    } */
+      (destinations, buildings.map { case (key, name, _, _) => (key, name) })
+    }
+
+    def uniteDistancesAndNames(distances: Seq[Int], buildings: Seq[(String, String)]): Seq[(String, String, Int)] = distances match {
+      case x :: xs => return uniteDistancesAndNames(xs, buildings.tail) :+ (buildings.head._1, buildings.head._2, x)
+      case nil => return Seq()
+    }
+
+    val destinationsAndNames: (String, Seq[(String, String)]) = getDestinationsAndNames
+    val GoogleDistanceService: WSRequestHolder = WS
+      .url("https://maps.googleapis.com/maps/api/distancematrix/json")
+      .withQueryString("origins" -> position, "destinations" -> destinationsAndNames._1, "mode" -> "walking")
+      .withRequestTimeout(3000).withFollowRedirects(true)
+
+    val futureResult = GoogleDistanceService.get().map { response =>
+      if (response.status == 200) {
+        val distances = response.json.\\("distance").map(x => x.\("value").toString().toInt)
+        if (distances.length == destinationsAndNames._2.length) {
+          Some(uniteDistancesAndNames(distances, destinationsAndNames._2).sortBy(_._3))
+        } else
+          None
+      } else
+        None
+    }
+
+    ContentType match {
+      case controllers.v1.JSON => getDistancesAsJson(futureResult)
+      case _ => InternalServerError
+    }
+  }
+
+  /**
+   * Get all building distances as a JSON Result
+   *
+   * @param futureResult A mapped result of the GoogleDistanceService 
+   *
+   * @return A JSON Result, containing all informations about distances and buildings or InternalServerError
+   */
+  def getDistancesAsJson(futureResult: Future[Option[Seq[(String, String, Int)]]]): Result = {
+    try {
+      Await.result(futureResult, 10.second) match {
+        case Some(namesAndDistances) => {
+          val ResultAsJson = namesAndDistances.map {
+            case (key, name, distance) =>
+              Json.arr(Json.obj("id" -> JsString(key), "fullname" -> JsString(name), "distance" -> JsNumber(distance)))
+          }.reduce((a, b) => a ++ b)
+
+          Ok(ResultAsJson)
+        }
+        case None => InternalServerError
+      }
+    } catch {
+      case t: Throwable => InternalServerError
+    }
   }
 }

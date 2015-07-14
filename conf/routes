@@ -7,6 +7,8 @@
 GET     /building								controllers.v1.buildings
 GET     /buildings								controllers.v1.buildings
 GET     /building/:id							controllers.v1.buildingDetails(id: String)
+GET     /buildings/distances					controllers.v1.DistanceList(location)
+
 
 # Map static resources from the /public folder to the /assets URL path
 # OPTIONS /*all  								filters.CorsFilter.preflight(all: String)
