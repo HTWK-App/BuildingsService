@@ -2,6 +2,9 @@ HTWK Buildings Microservice
 =================================
 [![Build Status](https://snap-ci.com/HTWK-App/BuildingsService/branch/master/build_image)](https://snap-ci.com/HTWK-App/BuildingsService/branch/master)
 [![License](https://img.shields.io/badge/license-GPLv3-blue.svg)](https://github.com/HTWK-App/BuildingsService/blob/master/LICENSE)
+[![Language](https://img.shields.io/badge/language-Scala%20(2.11.7)-blue.svg)](http://www.scala-lang.org/)
+[![Framework](https://img.shields.io/badge/framework-PlayFramework%20(2.3.9)-blue.svg)](https://www.playframework.com/)
+[![Lines of Code](https://img.shields.io/badge/loc-469-lightgrey.svg)](https://github.com/HTWK-App/BuildingsService/tree/master/app)
 
 This microservice collects all known data about buildings of the [University of Applied Science Leipzig](https://www.htwk-leipzig.de/en) and provisions it through a REST-JSON and Linked-Data API.
 
@@ -11,7 +14,7 @@ The data is fetched, cleaned and enhanced every 24 houres to ensure latest updat
 
 Once your Server is running all you need to do is open your browser pointing to the host/port you just published and look at the raw JSON-data. The default Port is 9000, so you got to call:
 
-``` http://localhos:9000/buildings ```
+``` http://localhost:9000/buildings ```
 
 in a Webbrowser.
 
