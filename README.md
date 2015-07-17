@@ -4,7 +4,7 @@ HTWK Buildings Microservice
 [![License](https://img.shields.io/badge/license-GPLv3-blue.svg)](https://github.com/HTWK-App/BuildingsService/blob/master/LICENSE)
 [![Language](https://img.shields.io/badge/language-Scala%20(2.11.7)-blue.svg)](http://www.scala-lang.org/)
 [![Framework](https://img.shields.io/badge/framework-PlayFramework%20(2.3.9)-blue.svg)](https://www.playframework.com/)
-[![Lines of Code](https://img.shields.io/badge/loc-469-lightgrey.svg)](https://github.com/HTWK-App/BuildingsService/tree/master/app)
+[![Lines of Code](https://img.shields.io/badge/loc-592-lightgrey.svg)](https://github.com/HTWK-App/BuildingsService/tree/master/app)
 
 This microservice collects all known data about buildings of the [University of Applied Science Leipzig](https://www.htwk-leipzig.de/en) and provisions it through a REST-JSON and Linked-Data API.
 
