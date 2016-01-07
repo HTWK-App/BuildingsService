@@ -59,11 +59,12 @@ object Extractor {
 
     val time = try {
       val buildings = extractBuildingLinks
-      val extractedBuildings = buildings.map { link =>
+      val extractedBuildings = buildings.seq.map { link =>
 
         val doc = Jsoup.connect(link).get()
         val heading = doc.select("#content h1").first().text
         val key = keyCornerCase(heading)
+        println(link)
         val content = doc.select("#content div.csc-textpic-text p")
         val text = textCornerCase(key, content)
         val adress = adressCornerCase(key, content)
@@ -74,7 +75,7 @@ object Extractor {
         (key, (heading, link, text, adress, pos, imgLink, img, timestamp))
       }.toMap
 
-      buildingsMap = extractedBuildings
+      buildingsMap = extractedBuildings.par
       RDFGraph = renewGraph
       Logger.info("Cache renewed")
       24.hour
@@ -218,7 +219,10 @@ object Extractor {
       case true => posLine.next().split('(').last.split(')').head.split(", ")
       case _ => Array("")
     }
-    (pos.head.toFloat, pos.last.toFloat)
+    if(pos.length <= 1)
+      (0, 0)
+    else
+      (pos.head.toFloat, pos.last.toFloat)
   }
 
   def renewGraph: Model = {
