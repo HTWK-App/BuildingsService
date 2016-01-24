@@ -59,12 +59,11 @@ object Extractor {
 
     val time = try {
       val buildings = extractBuildingLinks
-      val extractedBuildings = buildings.seq.map { link =>
+      val extractedBuildings = buildings.par.map { link =>
 
-        val doc = Jsoup.connect(link).get()
+        val doc = Jsoup.connect(link).timeout(10*1000).get()
         val heading = doc.select("#content h1").first().text
         val key = keyCornerCase(heading)
-        println(link)
         val content = doc.select("#content div.csc-textpic-text p")
         val text = textCornerCase(key, content)
         val adress = adressCornerCase(key, content)
