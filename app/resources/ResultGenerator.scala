@@ -116,7 +116,7 @@ object ResultGenerator {
         "id" -> JsString(key), "fullName" -> JsString(name), "detailLink" -> JsString(link),
         "description" -> Json.arr(JsString(text)), "latLng" -> JsString(long.toString() + ", " + lat.toString()),
         "address" -> JsString(address), "pictureLink" -> JsString(imglink),
-        "pictureData" -> JsString("data:image/jpg;base64," + img), "lastChange" -> JsNumber(timestamp)))
+        "pictureData" -> JsString(img), "lastChange" -> JsNumber(timestamp)))
       case None => None
     }
   }
@@ -152,7 +152,7 @@ object ResultGenerator {
             .addProperty(PostalAddress.streetAddress, model.createLiteral(address, "de")))
           .addProperty(Place.photo, model.createResource(baseURI + "/" + key + "/photo")
             .addProperty(RDF.`type`, ImageObject.ImageObject)
-            .addProperty(ImageObject.contentUrl, "data:image/jpg;base64," + img)
+            .addProperty(ImageObject.contentUrl, img)
             .addProperty(ImageObject.url, imglink))
           .addProperty(Place.alternateName, key)
           .addProperty(Place.name, model.createLiteral(name, "de"))

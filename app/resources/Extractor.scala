@@ -7,6 +7,7 @@ import scala.collection.parallel.immutable.ParMap
 import scala.collection.parallel.immutable.ParSeq
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.duration.FiniteDuration
+import scala.util.matching.Regex
 
 import org.apache.commons.codec.binary.Base64
 import org.jsoup.Jsoup
@@ -67,7 +68,7 @@ object Extractor {
         val content = doc.select("#content div.csc-textpic-text p")
         val text = textCornerCase(key, content)
         val adress = adressCornerCase(key, content)
-        val pos = extractPosition(doc)
+        val pos = extractPosition(doc, key)
         val (imgLink, img) = imageCornerCase(key, doc)
         val timestamp = extractTimestamp(doc).getTime
 
@@ -110,6 +111,7 @@ object Extractor {
     key match {
       case "Mensa Academica" => "Mensa"
       case "SH früher HS" => "SH"
+      case "Forschungszentrum Life Science & Engineering" => "FZE"
       case _ => key
     }
   }
@@ -155,12 +157,19 @@ object Extractor {
         .reduce((a, b) => a + add + b)
     }
 
-    key match {
+    val address = key match {
       case "FZC" => extractAdress(2, 1, ", ")
       case "HB" => extractAdress(2, 1)
       case "M" => ""
       case "Mensa" => extractAdress(4, 3)
+      case "MN" => "Koburger Straße 62, 04416 Markkleeberg"
       case _ => content.last().text()
+    }
+    val postal = new Regex("\\d{5}") findFirstIn address
+    postal match {
+      case Some(p) if key == "MZ" => address.splitAt(address.indexOf(p)-1) match{case (a,b) => a.dropRight(1) + "," + b}
+      case Some(p) => address.splitAt(address.indexOf(p)-1) match{case (a,b) => a.replace(",", "") + "," + b}
+      case None => address
     }
   }
 
@@ -177,12 +186,13 @@ object Extractor {
     val imgLink = key match {
       case "FZC" => ""
       case "N" => ""
+      case "Sportplatz" => ""
       case _ => "http://www.htwk-leipzig.de/" + (doc select ("#content img") attr ("src"))
     }
 
     val img = imgLink match {
       case "" => ""
-      case _ => Base64 encodeBase64String (Jsoup connect (imgLink) ignoreContentType (true) execute () bodyAsBytes ())
+      case _ => "data:image/jpg;base64," + Base64.encodeBase64String(Jsoup.connect(imgLink).ignoreContentType(true).execute().bodyAsBytes())
     }
     (imgLink, img)
   }
@@ -210,7 +220,7 @@ object Extractor {
    *
    * @return 2_Tuple[Latitude, Longitude]
    */
-  private def extractPosition(doc: Document): (Float, Float) = {
+  private def extractPosition(doc: Document, key: String): (Float, Float) = {
     val posLine = doc.toString().lines filter { line =>
       line contains ("var latlng = new google.maps.LatLng(")
     }
@@ -218,10 +228,10 @@ object Extractor {
       case true => posLine.next().split('(').last.split(')').head.split(", ")
       case _ => Array("")
     }
-    if(pos.length <= 1)
-      (0, 0)
-    else
-      (pos.head.toFloat, pos.last.toFloat)
+    key match {
+      case "MN" => (51.2824333.toFloat, 12.360206.toFloat)
+      case _ => (pos.head.toFloat, pos.last.toFloat)
+    }
   }
 
   def renewGraph: Model = {
@@ -247,7 +257,7 @@ object Extractor {
             .addProperty(PostalAddress.streetAddress, model.createLiteral(address, "de")))
           .addProperty(Place.photo, model.createResource(baseURI + "/" + key + "/photo")
             .addProperty(RDF.`type`, ImageObject.ImageObject)
-            .addProperty(ImageObject.contentUrl, "data:image/jpg;base64," + img)
+            .addProperty(ImageObject.contentUrl, img)
             .addProperty(ImageObject.url, imglink))
           .addProperty(Place.alternateName, key)
           .addProperty(Place.name, model.createLiteral(name, "de"))
