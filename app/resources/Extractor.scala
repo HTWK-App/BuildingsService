@@ -43,7 +43,7 @@ object Extractor {
     val b = buildingsMap
     b
   }
-  
+
   /** Returns a Jena RDF Model, containing all known buildings */
   def getGraph: Model = {
     val b = RDFGraph
@@ -60,7 +60,7 @@ object Extractor {
 
     val time = try {
       val buildings = extractBuildingLinks
-      val extractedBuildings = buildings.par.map { link =>
+      val extractedBuildings = buildings.map { link =>
 
         val doc = Jsoup.connect(link).timeout(10*1000).get()
         val heading = doc.select("#content h1").first().text
@@ -70,7 +70,7 @@ object Extractor {
         val adress = adressCornerCase(key, content)
         val pos = extractPosition(doc, key)
         val (imgLink, img) = imageCornerCase(key, doc)
-        val timestamp = extractTimestamp(doc).getTime
+        val timestamp = extractTimestamp(key, doc).getTime
 
         (key, (heading, link, text, adress, pos, imgLink, img, timestamp))
       }.toMap
@@ -205,12 +205,13 @@ object Extractor {
    * @return Extracted Timestamp as Date Object
    *
    */
-  private def extractTimestamp(doc: Document): Date = {
-    val extime = doc.select("#content .last_update").first().text()
-      .split("E-Mail").head
-      .split("am").last
-      .replace(" ", "")
-    new SimpleDateFormat("dd.MM.yyy").parse(extime)
+  private def extractTimestamp(key: String, doc: Document): Date = {
+    try {
+      val extime = doc.select("#content .tx-tslastupdate-pi1").text().split(":").last.replace(" ", "")
+      new SimpleDateFormat("dd.MM.yyy").parse(extime)
+    } catch {
+      case e: Exception => new SimpleDateFormat("dd.MM.yyy").parse("01.01.2016")
+    }
   }
 
   /**
@@ -264,7 +265,7 @@ object Extractor {
           .addProperty(Place.description, model.createLiteral(text, "de"))
       }
     }
-    
+
     model
   }
 }
